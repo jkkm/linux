@@ -193,6 +193,9 @@ static int print_unex = 1;
 #include <linux/io.h>
 #include <linux/uaccess.h>
 
+#include <acpi/acpi_bus.h>
+#include <acpi/acpi_drivers.h>
+
 /*
  * PS/2 floppies have much slower step rates than regular floppies.
  * It's been recommended that take about 1/4 of the default speed
@@ -4548,6 +4551,110 @@ static void __init parse_floppy_cfg_string(char *cfg)
 	}
 }
 
+static void __exit floppy_module_exit(void);
+
+#if defined(CONFIG_ACPI)
+
+#define MAX_ACPI_FLOPPIES	4
+struct fde_ret {
+	u32 floppies[MAX_ACPI_FLOPPIES];
+	u32 tape;
+};
+
+static int acpi_fde_add(struct acpi_device *dev)
+{
+	struct acpi_buffer out = { ACPI_ALLOCATE_BUFFER, NULL };
+	union acpi_object *obj;
+	struct fde_ret *fde;
+	acpi_status status;
+	int i, c = 0;
+
+	status = acpi_evaluate_object(dev->handle, "_FDE", NULL, &out);
+	if (ACPI_FAILURE(status)) {	/* fallback */
+		pr_info("acpi_fde: failed to evaluate _FDE\n");
+		goto probe_floppies;
+	}
+
+	obj = out.pointer;
+	if (!obj || obj->type != ACPI_TYPE_BUFFER) {
+		pr_info("acpi_fde: bad return from _FDE method\n");
+		goto probe_floppies;
+	}
+
+	fde = (struct fde_ret *)obj->buffer.pointer;
+
+	for (i = 0; i < MAX_ACPI_FLOPPIES; i++)
+		if (fde->floppies[i])
+			c++;
+
+	pr_info("acpi reports %d floppies attached\n", c);
+	if (!c)
+		return 0;
+
+	/* fallthrough, we had floppies... */
+probe_floppies:
+	kfree(out.pointer);
+
+	if (floppy)
+		parse_floppy_cfg_string(floppy);
+	return floppy_init();
+}
+
+static const struct acpi_device_id fde_pnpids[] = {
+	{ "PNP0700", 0 },
+	{ "PNP0701", 0 },
+	{ "", 0 }
+};
+MODULE_DEVICE_TABLE(acpi, fde_pnpids);
+
+static struct acpi_driver acpi_fde_driver = {
+	.name = "fde",
+	.class = "floppy",
+	.ids = fde_pnpids,
+	.ops = {
+		.add = acpi_fde_add,
+	},
+};
+
+static int __init acpi_fde_init(void)
+{
+	int err;
+
+	if (acpi_disabled) {
+		if (floppy)
+			parse_floppy_cfg_string(floppy);
+		return floppy_init();
+	}
+
+	err = acpi_bus_register_driver(&acpi_fde_driver);
+	if (err) {
+		pr_info("error register acpi floppy\n");
+		return err;
+	}
+
+	pr_info("floppy: loaded\n");
+
+	return 0;
+}
+module_init(acpi_fde_init);
+
+static void __exit acpi_fde_fini(void) {
+	acpi_bus_unregister_driver(&acpi_fde_driver);
+	floppy_module_exit();
+	pr_info("floppy: unloaded\n");
+}
+module_exit(acpi_fde_fini);
+
+#else /*!CONFIG_ACPI*/
+
+/* This doesn't actually get used other than for module information */
+static const struct pnp_device_id floppy_pnpids[] = {
+	{"PNP0700", 0},
+	{}
+};
+
+MODULE_DEVICE_TABLE(pnp, floppy_pnpids);
+
 static int __init floppy_module_init(void)
 {
 	if (floppy)
@@ -4555,6 +4662,10 @@ static int __init floppy_module_init(void)
 	return floppy_init();
 }
 module_init(floppy_module_init);
+
+module_exit(floppy_module_exit);
+
+#endif /*CONFIG_ACPI*/
 
 static void __exit floppy_module_exit(void)
 {
@@ -4587,22 +4698,12 @@ static void __exit floppy_module_exit(void)
 	fd_eject(0);
 }
 
-module_exit(floppy_module_exit);
-
 module_param(floppy, charp, 0);
 module_param(FLOPPY_IRQ, int, 0);
 module_param(FLOPPY_DMA, int, 0);
 MODULE_AUTHOR("Alain L. Knaff");
 MODULE_SUPPORTED_DEVICE("fd");
 MODULE_LICENSE("GPL");
-
-/* This doesn't actually get used other than for module information */
-static const struct pnp_device_id floppy_pnpids[] = {
-	{"PNP0700", 0},
-	{}
-};
-
-MODULE_DEVICE_TABLE(pnp, floppy_pnpids);
 
 #else
 
