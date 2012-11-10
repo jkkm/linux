@@ -51,6 +51,16 @@
 #define __ALIGN_STR	".align 4,0x90"
 #endif
 
+#ifndef CTORS_SECTION
+#if defined(CC_HAVE_INITFINI_ARRAY)
+#define CTORS_SECTION		.init_array
+#define CTORS_SECTION_STR	".init_array"
+#else
+#define CTORS_SECTION		.ctors
+#define CTORS_SECTION_STR	".ctors"
+#endif
+#endif
+
 #ifdef __ASSEMBLY__
 
 #ifndef LINKER_SCRIPT

@@ -470,10 +470,16 @@
 		INIT_TASK_DATA(align)					\
 	}
 
+#if defined(CC_HAVE_INITFINI_ARRAY)
+#define CTORS_SECTION	.init_array
+#else
+#define CTORS_SECTION	.ctors
+#endif
+
 #ifdef CONFIG_CONSTRUCTORS
 #define KERNEL_CTORS()	. = ALIGN(8);			   \
 			VMLINUX_SYMBOL(__ctors_start) = .; \
-			*(.ctors)			   \
+			*(CTORS_SECTION)		   \
 			VMLINUX_SYMBOL(__ctors_end) = .;
 #else
 #define KERNEL_CTORS()

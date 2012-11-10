@@ -665,6 +665,14 @@ ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
 	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
 endif
 
+# check for '.{init,fini}_array' instead of '.{c,d}tors'
+#  must be CPPFLAGS so the linker script has it set as well
+ifdef CONFIG_GCOV_KERNEL
+ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/initfini_array-test.sh $(CC)), y)
+	KBUILD_CPPFLAGS += -DCC_HAVE_INITFINI_ARRAY
+endif
+endif # only if CONFIG_GCOV_KERNEL defined
+
 # Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
 KBUILD_CPPFLAGS += $(KCPPFLAGS)
 KBUILD_AFLAGS += $(KAFLAGS)
