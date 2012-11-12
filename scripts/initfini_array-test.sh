@@ -18,9 +18,10 @@ cat <<EOF | ${CROSS_COMPILE}as -o $j.o >/dev/null 2>&1
  * ld is capable of it.)
  *
  * Ordering is .ctors backwards, and .init_array forward, where the priority
- * specifier is taken from 0 for .init_array, and 65535-$pri for .ctors. 
+ * specifier is taken from 0 for .init_array, and 65535-$pri for .ctors.
  *
- * Should result in 
+ * Sadly we can't just run test this, since we may be building in a cross
+ * compiled environment.
  *
  * Copyright (C) 2011 H.J. Lu  <hongjiu.lu@intel.com>
  * Copyright (C) 2012 Kyle McMartin <kmcmarti@redhat.com>
