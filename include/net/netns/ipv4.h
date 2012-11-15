@@ -8,10 +8,10 @@
 #include <linux/uidgid.h>
 #include <net/inet_frag.h>
 
-struct tcpm_hash_bucket;
 struct ctl_table_header;
 struct ipv4_devconf;
 struct fib_rules_ops;
+struct flex_array;
 struct hlist_head;
 struct fib_table;
 struct sock;
@@ -40,7 +40,7 @@ struct netns_ipv4 {
 
 	struct sock		**icmp_sk;
 	struct inet_peer_base	*peers;
-	struct tcpm_hash_bucket	*tcp_metrics_hash;
+	struct flex_array	*tcp_metrics_hash;
 	unsigned int		tcp_metrics_hash_log;
 	struct netns_frags	frags;
 #ifdef CONFIG_NETFILTER
