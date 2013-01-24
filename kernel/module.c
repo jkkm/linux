@@ -2459,8 +2459,10 @@ static int module_sig_check(struct load_info *info)
 		return 0;
 	}
 
-	/* Not having a signature is only an error if we're strict. */
-	if (err < 0 && fips_enabled)
+	/* Not having a signature is only an error if we're strict, and
+	 * the module registers a crypto algorithm (checked in modpost)
+	 */
+	if (err < 0 && fips_enabled && get_modinfo(info, "crypto_fips"))
 		panic("Module verification failed with error %d in FIPS mode\n",
 		      err);
 	if (err == -ENOKEY && !sig_enforce)

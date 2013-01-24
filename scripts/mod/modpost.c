@@ -1888,6 +1888,23 @@ static void add_staging_flag(struct buffer *b, const char *name)
 		buf_printf(b, "\nMODULE_INFO(staging, \"Y\");\n");
 }
 
+static void add_crypto_flag(struct buffer *b, struct module *mod)
+{
+#if defined(CONFIG_CRYPTO_FIPS)
+	struct symbol *s;
+
+	/* iterate unresolved symbols looking for...
+	 *  - crypto_register_algs
+	 */
+	for (s = mod->unres; s; s = s->next) {
+		if (strcmp("crypto_register_algs", s->name) == 0)
+			buf_printf(b, "\nMODULE_INFO(crypto_fips, \"Y\");\n");
+	}
+#else
+	return;
+#endif /*CONFIG_CRYPTO_FIPS*/
+}
+
 /**
  * Record CRCs for unresolved symbols
  **/
@@ -2202,6 +2219,7 @@ int main(int argc, char **argv)
 		add_header(&buf, mod);
 		add_intree_flag(&buf, !external_module);
 		add_staging_flag(&buf, mod->name);
+		add_crypto_flag(&buf, mod);
 		err |= add_versions(&buf, mod);
 		add_depends(&buf, mod, modules);
 		add_moddevtable(&buf, mod);
