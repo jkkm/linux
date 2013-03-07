@@ -139,5 +139,14 @@ static inline void crypto_notify(unsigned long val, void *v)
 	blocking_notifier_call_chain(&crypto_chain, val, v);
 }
 
+#if defined(CONFIG_CRYPTO_FIPS)
+int crypto_sig_check(struct module *m);
+#else
+static inline int crypto_sig_check(struct module *m)
+{
+	return 1;
+}
+#endif
+
 #endif	/* _CRYPTO_INTERNAL_H */
 

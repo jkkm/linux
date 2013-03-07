@@ -52,6 +52,9 @@ static int crypto_check_alg(struct crypto_alg *alg)
 	if (alg->cra_priority < 0)
 		return -EINVAL;
 
+	if (!crypto_sig_check(alg->cra_module))
+		return -EINVAL;
+
 	return crypto_set_driver_name(alg);
 }
 
@@ -433,6 +436,11 @@ int crypto_register_template(struct crypto_template *tmpl)
 	list_for_each_entry(q, &crypto_template_list, list) {
 		if (q == tmpl)
 			goto out;
+	}
+
+	if (!crypto_sig_check(tmpl->module)) {
+		err = -EINVAL;
+		goto out;
 	}
 
 	list_add(&tmpl->list, &crypto_template_list);

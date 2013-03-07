@@ -15,6 +15,19 @@
 int fips_enabled;
 EXPORT_SYMBOL_GPL(fips_enabled);
 
+/* forbid loading modules in fips mode if the module is not signed */
+int crypto_sig_check(struct module *m)
+{
+#if defined(CONFIG_MODULE_SIG)
+	if (!fips_enabled || !m || (m && m->sig_ok))
+		return 1;
+	else
+		return 0;
+#else
+	return 1;
+#endif
+}
+
 /* Process kernel command-line parameter at boot time. fips=0 or fips=1 */
 static int fips_enable(char *str)
 {
