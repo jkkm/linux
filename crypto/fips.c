@@ -19,10 +19,13 @@ EXPORT_SYMBOL_GPL(fips_enabled);
 int crypto_sig_check(struct module *m)
 {
 #if defined(CONFIG_MODULE_SIG)
-	if (!fips_enabled || !m || (m && m->sig_ok))
+	if (!fips_enabled || !m)
+		return 1;
+
+	if (m && m->sig_ok)
 		return 1;
 	else
-		return 0;
+		panic("Module verification failed in FIPS mode\n");
 #else
 	return 1;
 #endif
